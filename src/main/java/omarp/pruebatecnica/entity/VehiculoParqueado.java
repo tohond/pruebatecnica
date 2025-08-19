@@ -2,6 +2,7 @@ package omarp.pruebatecnica.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -27,8 +28,8 @@ public class VehiculoParqueado {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @ManyToOne
-    @JoinColumn(name = "vehiculo_id", nullable = false)
+    @ManyToOne (cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "vehiculo_id", nullable = false, unique = true)
     @NotNull
     private Vehiculo vehiculo;
     

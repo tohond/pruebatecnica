@@ -1,5 +1,6 @@
 package omarp.pruebatecnica.entity;
 
+import java.util.List;
 import java.util.Set;
 
 import jakarta.persistence.CascadeType;
@@ -26,11 +27,15 @@ public class Vehiculo {
 	public final String placa;
 	public String modelo;
 	public String marca;
-	
+	public String nacionalidad;
     
     // Relación uno a muchos con Historico
     @OneToMany(mappedBy = "vehiculo", cascade = CascadeType.ALL)
-    private Set<Historico> historicos;
+    private List
+    <Historico> historicos;
+    
+    @OneToMany(mappedBy = "vehiculo", cascade = CascadeType.ALL)
+    private List<VehiculoParqueado> vehiculosParqueados;
 	
     @Override
     public boolean equals(Object o) {

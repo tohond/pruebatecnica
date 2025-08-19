@@ -47,8 +47,9 @@ public class Historico {
 	    
 	    
 	    
-	    @Column(name = "horas_parqueado")
-	    private Long horasParqueado;
+	    @Column(name = "costoxhora_momento", nullable = false)
+	    @NotNull
+	    private int costoxhoraMomento;
 	    
 	    /*@PrePersist
 	    @PreUpdate
@@ -62,6 +63,12 @@ public class Historico {
 	            costoTotal = parqueadero.getCostoPorHora().multiply(BigDecimal.valueOf(horasParqueado));
 	        }
 	    }*/
-	    
+	    public Historico(VehiculoParqueado vehiculoParqueado, LocalDateTime fechaSalida) {
+	        this.vehiculo = vehiculoParqueado.getVehiculo();
+	        this.parqueadero = vehiculoParqueado.getParqueadero();
+	        this.fechaIngreso = vehiculoParqueado.getFechaIngreso();
+	        this.fechaSalida = fechaSalida;
+	        this.costoxhoraMomento = vehiculoParqueado.getParqueadero().getCostoPorHora();
+	    }
 	    
 }

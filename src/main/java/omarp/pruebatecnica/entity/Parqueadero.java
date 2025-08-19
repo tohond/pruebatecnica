@@ -1,5 +1,6 @@
 package omarp.pruebatecnica.entity;
 
+import java.util.List;
 import java.util.Set;
 
 import jakarta.persistence.CascadeType;
@@ -50,6 +51,9 @@ public class Parqueadero {
     private int costoPorHora;
     
     @OneToMany(mappedBy = "parqueadero", cascade = CascadeType.ALL)
-    private Set<VehiculoParqueado> vehiculosParqueados;
+    private List<VehiculoParqueado> vehiculosParqueados;
+    
+    @OneToMany(mappedBy = "parqueadero", cascade = CascadeType.ALL)
+    private List<Historico> historicos;
     
 }

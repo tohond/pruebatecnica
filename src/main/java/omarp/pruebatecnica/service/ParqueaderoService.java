@@ -3,7 +3,10 @@ package omarp.pruebatecnica.service;
 
 import lombok.RequiredArgsConstructor;
 import omarp.pruebatecnica.dto.ParqueaderoDTO;
+import omarp.pruebatecnica.dto.VehiculoDTO;
 import omarp.pruebatecnica.entity.Parqueadero;
+import omarp.pruebatecnica.entity.Vehiculo;
+import omarp.pruebatecnica.entity.VehiculoParqueado;
 import omarp.pruebatecnica.repository.ParqueaderoRepository;
 import omarp.pruebatecnica.repository.UserRepository;
 
@@ -13,12 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class ParqueaderoService {
+public class ParqueaderoService  {
     
     private final ParqueaderoRepository parqueaderoRepository;
     private final UserRepository usuarioRepository;
@@ -48,56 +52,71 @@ public class ParqueaderoService {
         return modelMapper.map(parqueadero, ParqueaderoDTO.class);
     }
     
-    public ParqueaderoDTO actualizarParqueadero(ParqueaderoDTO requestDTO) {
-        Parqueadero parqueadero = parqueaderoRepository.findById(requestDTO.getId()).get();
-                
+    public ParqueaderoDTO actualizarParqueadero (ParqueaderoDTO requestDTO) throws Exception {
+        Parqueadero parqueadero = parqueaderoRepository.findById(requestDTO.getId())
+				.orElseThrow(() -> new Exception("Parqueadero no encontrado con ID: " + requestDTO.getId()));
+        
         // Validar que el socio existe y tiene rol SOCIO
         
-       
+       parqueadero = modelMapper.map(requestDTO, Parqueadero.class);
       
-        Parqueadero newParqueadero = modelMapper.map(requestDTO, Parqueadero.class);
-        parqueadero.setId(newParqueadero.getId());
-        return convertToResponseDTO(updatedParqueadero);
+        
+        return modelMapper.map(parqueaderoRepository.save(parqueadero), ParqueaderoDTO.class);
     }
     
-    public void eliminarParqueadero(Long id) {
+    public void eliminarParqueadero(Long id) throws Exception {
         Parqueadero parqueadero = parqueaderoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Parqueadero no encontrado con ID: " + id));
+                .orElseThrow(() -> new Exception("Parqueadero no encontrado con ID: " + id));
         
         // Verificar si hay vehículos actualmente parqueados
         Long vehiculosActuales = parqueaderoRepository.countVehiculosActuales(id);
         if (vehiculosActuales > 0) {
-            throw new ParqueaderoException("No se puede eliminar el parqueadero porque tiene " + vehiculosActuales + " vehículos parqueados actualmente");
+            throw new Exception("No se puede eliminar el parqueadero porque tiene " + vehiculosActuales + " vehículos parqueados actualmente");
         }
         
         parqueaderoRepository.delete(parqueadero);
     }
     
     @Transactional(readOnly = true)
-    public List<ParqueaderoResponseDTO> obtenerParqueaderosPorSocio(Long socioId) {
-        Usuario socio = usuarioRepository.findById(socioId)
-                .orElseThrow(() -> new ResourceNotFoundException("Socio no encontrado con ID: " + socioId));
+    public List<VehiculoDTO> obtenerVehiculosPorParqueadero(Long id)	 throws Exception {
         
-        return parqueaderoRepository.findBySocio(socio).stream()
-                .map(this::convertToResponseDTO)
-                .collect(Collectors.toList());
+    	Parqueadero parqueadero = parqueaderoRepository.findById(id)
+                .orElseThrow(() -> new Exception("Parqueadero no encontrado con ID: " + id));
+    	
+    			Set<VehiculoParqueado> vehiculosp = parqueadero.getVehiculosParqueados();
+    			List<VehiculoDTO> vehiculosDTO = vehiculosp.stream()
+						.map(v -> modelMapper.map(v.getVehiculo(), VehiculoDTO.class))
+						.collect(Collectors.toList());
+    			return vehiculosDTO;
+    			
+    	
+    	
     }
     
-    private ParqueaderoResponseDTO convertToResponseDTO(Parqueadero parqueadero) {
-        Long vehiculosActuales = parqueaderoRepository.countVehiculosActuales(parqueadero.getId());
-        
-        return ParqueaderoResponseDTO.builder()
-                .id(parqueadero.getId())
-                .nombre(parqueadero.getNombre())
-                .capacidad(parqueadero.getCapacidad())
-                .costoPorHora(parqueadero.getCostoPorHora())
-                .fechaCreacion(parqueadero.getFechaCreacion())
-                .vehiculosActuales(vehiculosActuales)
-                .socio(ParqueaderoResponseDTO.SocioDTO.builder()
-                        .id(parqueadero.getSocio().getId())
-                        .nombre(parqueadero.getSocio().getNombre())
-                        .email(parqueadero.getSocio().getEmail())
-                        .build())
-                .build();
+    public VehiculoParqueaderoDTO registrarentrada(Long parqueaderoId, VehiculoDTO vehiculoDTO, LocalDateTime time) throws Exception {
+		Parqueadero parqueadero = parqueaderoRepository.findById(parqueaderoId).get();
+		VehiculoParqueado vehiculoParqueado = new VehiculoParqueado();
+		vehiculoParqueado.setVehiculo(modelMapper.map(vehiculoDTO, Vehiculo.class));
+		vehiculoParqueado.setParqueadero(parqueadero);
+		vehiculoParqueado.setFechaIngreso(time);
+		parqueadero.getVehiculosParqueados().add(vehiculoParqueado);
+		parqueaderoRepository.save(parqueadero);
+		 
+		return modelMapper.map(vehiculoParqueado, VehiculoParqueaderoDTO.class);
     }
+    
+    public VehiculoParqueaderoDTO registrarSalida(Long parqueaderoId, String placa, LocalDateTime time) throws Exception {
+		Parqueadero parqueadero = parqueaderoRepository.findById(parqueaderoId).get();
+		Vehiculo v = new Vehiculo(placa);
+		if (!parqueadero.getVehiculosParqueados().contains(v)) {
+			
+			
+			throw new Exception("El vehículo con placa " + placa + " no está parqueado en el parqueadero con ID: " + parqueaderoId);
+		}
+		VehiculoParqueado vehiculoParqueado = parqueadero.getVehiculosParqueados().
+				
+    }
+		
+    
+    
 }
